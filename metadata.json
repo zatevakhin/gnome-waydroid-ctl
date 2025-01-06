@@ -1,0 +1,11 @@
+{
+    "uuid": "gnome-waydroid-ctl@github.com.zatevakhin",
+    "name": "Waydroid Controller",
+    "description": "Quick Settings toggle to control Waydroid Android container sessions",
+    "shell-version": [
+        "46",
+        "47"
+    ],
+    "url": "https://github.com/zatevakhin/gnome-waydroid-ctl",
+    "version": 1
+}
