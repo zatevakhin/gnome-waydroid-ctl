@@ -4,9 +4,11 @@ Quick Settings toggle to control Waydroid Android container sessions.
 
 ## Screenshots
 
-![Quick Settings Toggle On](images/toggle_on.png){width=20%}
-![Quick Settings Toggle Off](images/toggle_off.png){width=20%}
-![Extensions App](images/extensions_app.png){width=20%}
+<div style="display: flex; justify-content: space-between;">
+  <img src="images/toggle_on.png" alt="Quick Settings Toggle On" style="width:30%; height:auto;">
+  <img src="images/toggle_off.png" alt="Quick Settings Toggle Off" style="width:30%; height:auto;">
+  <img src="images/extensions_app.png" alt="Extensions App" style="width:30%; height:auto;">
+</div>
 
 ## Installation
 
