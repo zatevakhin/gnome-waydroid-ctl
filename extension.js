@@ -8,28 +8,37 @@ import * as QuickSettings from 'resource:///org/gnome/shell/ui/quickSettings.js'
 
 import { Extension } from 'resource:///org/gnome/shell/extensions/extension.js';
 
+const ICON_LOADING = "process-working-symbolic";
+const ICON_STOPPED = "system-shutdown-symbolic";
+const ICON_FROZEN = "media-playback-pause-symbolic";
+const ICON_RUNNING = "phone-symbolic";
+
+
 const WaydroidToggle = GObject.registerClass(
 class WaydroidToggle extends QuickSettings.QuickToggle {
     constructor() {
         super({
             title: 'Waydroid',
-            iconName: 'phone-symbolic',
+            iconName: ICON_LOADING,
             toggleMode: true,
         });
 
+        this._isFrozen = false;
+        this._isStopped = false;
         this._checkServiceStatus();
 
-        // Add periodic status check (every 5 seconds)
         this._statusCheckId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 5000, () => {
             this._checkServiceStatus();
             return GLib.SOURCE_CONTINUE;
         });
 
         this.connect('clicked', () => {
-            if (this.checked) {
-                this._startWaydroid();
-            } else {
+            if (!this.checked) {
                 this._stopWaydroid();
+            } else if (this._isFrozen) {
+                this._stopWaydroid();
+            } else {
+                this._startWaydroid();
             }
         });
     }
@@ -50,6 +59,16 @@ class WaydroidToggle extends QuickSettings.QuickToggle {
         }
     }
 
+    _updateIcon(isFrozen, isStopped) {
+        if (isStopped) {
+            this.iconName = ICON_STOPPED;
+        } else if (isFrozen) {
+            this.iconName = ICON_FROZEN;
+        } else {
+            this.iconName = ICON_RUNNING;
+        }
+    }
+
     _checkServiceStatus() {
         try {
             let [success, stdout, stderr] = GLib.spawn_command_line_sync('waydroid status');
@@ -57,24 +76,36 @@ class WaydroidToggle extends QuickSettings.QuickToggle {
                 let output = new TextDecoder().decode(stdout);
                 let lines = output.split('\n');
 
-                // Check both Session and Container status
-                let session_running = lines.some(line =>
-                    line.trim().startsWith('Session:') &&
-                    line.includes('RUNNING')
+                let session_line = lines.find(line =>
+                    line.trim().startsWith('Session:')
+                );
+                let session_running = session_line?.includes('RUNNING') ?? false;
+                let session_stopped = session_line?.includes('STOPPED') ?? false;
+
+                let container_line = lines.find(line =>
+                    line.trim().startsWith('Container:')
                 );
 
-                let container_running = lines.some(line =>
-                    line.trim().startsWith('Container:') &&
-                    line.includes('RUNNING')
-                );
+                let container_running = container_line?.includes('RUNNING') ?? false;
+                let container_frozen = container_line?.includes('FROZEN') ?? false;
 
-                // Set checked if both are running
-                this.set_checked(session_running && container_running);
+                this._isFrozen = container_frozen;
+                this._isStopped = session_stopped;
+
+                this._updateIcon(container_frozen, session_stopped);
+
+                this.set_checked(session_running && (container_running || container_frozen));
             } else {
+                this._isFrozen = false;
+                this._isStopped = true;
+                this._updateIcon(false, true);
                 this.set_checked(false);
             }
         } catch (e) {
             console.error(e);
+            this._isFrozen = false;
+            this._isStopped = true;
+            this._updateIcon(false, true);
             this.set_checked(false);
         }
     }
